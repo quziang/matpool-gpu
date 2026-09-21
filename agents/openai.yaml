@@ -1,0 +1,4 @@
+interface:
+  display_name: "矩池云 GPU"
+  short_description: "查询矩池云 GPU、配置租机、通过 SSH 运行代码及调用任务 API"
+  default_prompt: "使用 $matpool-gpu 帮我选择矩池云 GPU 并准备运行任务。"

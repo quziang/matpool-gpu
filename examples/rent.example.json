@@ -1,0 +1,9 @@
+{
+  "resource_pool_id": "REPLACE_WITH_CURRENT_POOL_ID",
+  "image_id": 0,
+  "machine_category": 0,
+  "hardware_qty": 1,
+  "vnc_switcher": false,
+  "auto_password": true,
+  "c": ""
+}

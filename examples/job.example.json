@@ -1,0 +1,9 @@
+{
+  "spec": {"gpuName": "REPLACE_WITH_EXACT_GPU_NAME"},
+  "agent_domain": 0,
+  "from_image_id": 0,
+  "cmd": "REPLACE_WITH_YOUR_FOREGROUND_COMMAND",
+  "remark": "REPLACE_WITH_UNIQUE_RUN_LABEL",
+  "domain": "offical",
+  "ports": []
+}
