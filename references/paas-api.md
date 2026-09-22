@@ -1,12 +1,14 @@
 # PaaS API 调用
 
+首次配置见 [setup.md](setup.md)：`python3 scripts/matpool_auth.py init --service paas`，再运行 `check --service paas`。客户端读取优先级为 `--token-file` → `MATPOOL_PAAS_TOKEN` → `~/.config/matpool-gpu/paas.token`；默认目录可用 `MATPOOL_CONFIG_DIR` 更改。
+
 ## 来源与已核实差异
 
 官方索引：<https://apidoc.matpool.com/llms.txt>；总览：<https://apidoc.matpool.com/>。
 
 总览称仅支持 HTTP，但接口 OpenAPI 的 server 为 `https://paas.matpool.com`（标注为测试环境）。2026-09-07 对该 HTTPS 地址 `GET /v1/job/stats` 无 Token 探测得到 HTTP 200、`{"code":176,"msg":"check jwt token failed"}`。这仅确认 TLS 与路由可达，不能声称账户 API 已可用。保持 HTTPS；供应商若给另一个地址，核实来源后修改客户端，勿将凭证降级发到 HTTP。
 
-总览写 PaaS Token 需联系官方开通，默认有效期一个月；使用前核实现行权限。仅通过 `Authorization: Bearer ...` 请求头传递。脚本从 `MATPOOL_PAAS_TOKEN` 环境变量或 `--token-file` 读取，不把 Token 写入技能、URL、命令参数或输出。用户在本机配置凭证即可，无需粘贴到对话。脚本不读取浏览器 Cookie。
+总览写 PaaS Token 需联系官方开通，默认有效期一个月；使用前核实现行权限。仅通过 `Authorization: Bearer ...` 请求头传递。脚本从上述优先级选择的凭证来源读取，不把 Token 写入技能、URL、命令参数或输出。用户在本机配置凭证即可，无需粘贴到对话。脚本不读取浏览器 Cookie。
 
 ## 接口表
 

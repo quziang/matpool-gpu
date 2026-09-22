@@ -10,6 +10,7 @@ import urllib.parse
 import urllib.request
 
 from matpool_api import InputError, NoRedirect, positive
+from matpool_auth import CredentialError, load_token
 
 BASE = 'https://matgo.cn/api'
 RENT_FIELDS = {'resource_pool_id', 'image_id', 'hardware_qty', 'machine_category',
@@ -93,7 +94,7 @@ def prepare_rent(body):
 
 def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument('--token-file', type=Path)
+    p.add_argument('--token-file', type=Path, help='Override environment or initialized web credential')
     p.add_argument('--output', type=Path, help='New private file for full response')
     sub = p.add_subparsers(dest='command', required=True)
     images = sub.add_parser('images')
@@ -138,8 +139,7 @@ def main(argv=None):
                        for k, v in body.items()}
             print(json.dumps(dict(preview=True, method=method, url=BASE+path, body=visible), indent=2))
             return 0
-        token = (args.token_file.read_text() if args.token_file
-                 else os.environ.get('MATPOOL_WEB_TOKEN', '')).strip()
+        token = load_token('web', args.token_file)
         if args.output:
             sink = os.fdopen(os.open(args.output, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600), 'w')
         status, result = request(method, path, token, query, body)
@@ -148,7 +148,7 @@ def main(argv=None):
         print(json.dumps(dict(http_status=status, response=summary(result)), ensure_ascii=False, indent=2))
         return 0 if 200 <= status < 300 and type(result.get('code')) is int and result['code'] == 0 else 1
     except (OSError, ValueError, urllib.error.URLError) as error:
-        msg = str(error) if isinstance(error, InputError) else type(error).__name__
+        msg = str(error) if isinstance(error, (InputError, CredentialError)) else type(error).__name__
         print(f'Failed: {msg}. No automatic retry; check nodes before repeating rent.', file=sys.stderr)
         return 2
     finally:

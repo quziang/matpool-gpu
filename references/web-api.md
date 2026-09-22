@@ -4,6 +4,8 @@
 
 ## 认证分流
 
+首次配置见 [setup.md](setup.md)：`python3 scripts/matpool_auth.py init --service web`，再运行 `check --service web`。客户端读取优先级为 `--token-file` → `MATPOOL_WEB_TOKEN` → `~/.config/matpool-gpu/matgo-web.token`；默认目录可用 `MATPOOL_CONFIG_DIR` 更改。
+
 - 市场库存 `/api/machine_pools`：无需登录，不发 Token。
 - 官网镜像、租机与实例 `https://matgo.cn/api`：用该站网页登录凭证，即 `matpool_token` Cookie 解码后去掉 `Bearer ` 前缀，作为 `Authorization: Bearer ...` 发送。
 - PaaS `https://paas.matpool.com/v1/job...`：使用独立 PaaS Token，见 paas-api.md。

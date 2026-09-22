@@ -7,6 +7,12 @@ description: 操作矩池云（Matpool / matgo.cn，用户有时称锯齿云）�
 
 将用户的计算任务落到矩池云，按现有授权完成选型、配置、执行和结果取回。主机市场：<https://matgo.cn/host-market/gpu>。
 
+## 首次安装与认证
+
+用户要安装、初始化 Token 或处理认证失败时，读 [references/setup.md](references/setup.md)。优先由 Agent 检查安装位置与已有配置，再引导本机初始化。
+公开库存无需认证；官网和 PaaS 凭证分别配置。`scripts/matpool_auth.py status` 只显示本地状态；`init --service web|paas` 保存凭证，`check --service web|paas` 做只读认证检查。不要要求用户把 Token 粘贴到聊天；终端隐藏输入由用户在自己的终端完成，Agent 可从已授权的环境变量或明确指定的私密文件导入。安装与认证不授权租机。
+客户端按 `--token-file`、对应环境变量、`~/.config/matpool-gpu/` 初始化文件的顺序读取，可用 `MATPOOL_CONFIG_DIR` 改目录。先复用已有有效配置；Chrome 导入仅在用户选择并已授权时执行。
+
 ## 选择操作方式
 
 - **查 GPU、价格、库存**：优先运行 `python3 scripts/matpool_inventory.py --gpu A2000`，它读取无需 Token 的官方市场资源池接口；具体语义见 [references/inventory.md](references/inventory.md)。
