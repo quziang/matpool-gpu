@@ -11,6 +11,8 @@ import urllib.parse
 import urllib.request
 import uuid
 
+from matpool_auth import CredentialError, load_token
+
 BASE_URL = 'https://paas.matpool.com'
 PRIVATE_KEYS = {'creds', 'password', 'token', 'authorization', 'sshauths',
                 'envs', 'cmd', 'urls', 'extradata', 'secret', 'access_token'}
@@ -130,7 +132,7 @@ def request(method, path, query, fields, token, timeout):
 
 def parser():
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument('--token-file', type=Path, help='Read token from a local private file')
+    p.add_argument('--token-file', type=Path, help='Override environment or initialized PaaS credential')
     p.add_argument('--output', type=Path, help='Create a 0600 file with full response; never overwrite')
     p.add_argument('--timeout', type=float, default=30)
     subs = p.add_subparsers(dest='command', required=True)
@@ -176,10 +178,7 @@ def main(argv=None):
                               'query': query, 'fields': redact(fields)}, ensure_ascii=False, indent=2))
             return 0
         if args.command != 'probe':
-            token = (args.token_file.read_text(encoding='utf-8') if args.token_file
-                     else os.environ.get('MATPOOL_PAAS_TOKEN', '')).strip()
-            if not token:
-                raise InputError('Configure MATPOOL_PAAS_TOKEN or --token-file; do not paste it into chat')
+            token = load_token('paas', args.token_file)
         # Reserve output before a mutation so an invalid path cannot cause lost results.
         if args.output:
             fd = os.open(args.output, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
@@ -193,7 +192,7 @@ def main(argv=None):
         return 0 if 200 <= status < 300 and type(result.get('code')) is int and result['code'] == 0 else 1
     except (OSError, ValueError, urllib.error.URLError) as error:
         # Do not print exception bodies: a malformed header or network error can include secrets.
-        message = str(error) if isinstance(error, InputError) else 'Request failed or input invalid'
+        message = str(error) if isinstance(error, (InputError, CredentialError)) else 'Request failed or input invalid'
         print(f'Error ({type(error).__name__}): {message}; no automatic retry.', file=sys.stderr)
         if args.command in {'create', 'cancel'} and args.execute:
             print('If a request reached the service, query task state before retrying.', file=sys.stderr)
