@@ -1,5 +1,7 @@
 # 网页租机与 SSH
 
+Windows 本机环境与点击错位排查见 [windows.md](windows.md)。
+
 ## 已观察到的网页流程（2026-09-07）
 
 市场 <https://matgo.cn/host-market/gpu> 未登录可查看 GPU、区域、单份显存、CPU、内存、硬盘、驱动、可用份数和计费选项。初次载入可能暂时没有卡片，待页面数据完成后再判断。

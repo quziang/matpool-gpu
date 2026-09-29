@@ -31,7 +31,7 @@ python3 scripts/matpool_web.py --token-file /private/credentials/matgo-web.token
 python3 scripts/matpool_web.py --token-file /private/credentials/matgo-web.token release NODE_ID --execute
 ```
 
-默认 stdout 只输出白名单摘要；使用 `--output` 将完整响应保存至新建 0600 文件。完整响应包含连接信息，应私密保存。`rent`、`release` 没有 `--execute` 只预览；是否执行由用户现有授权决定，不强制再问确认。
+默认 stdout 只输出白名单摘要；使用 `--output` 将完整响应保存至新建私密文件（POSIX 0600；Windows 受保护 DACL）。完整响应包含连接信息，应私密保存。`rent`、`release` 没有 `--execute` 只预览；是否执行由用户现有授权决定，不强制再问确认。
 
 已确认路由：
 

@@ -7,8 +7,10 @@ import os
 from pathlib import Path
 import stat
 import sys
-import tempfile
+import uuid
 import warnings
+
+from private_files import make_private_directory, open_private_text
 
 SERVICES = {
     'web': ('MATPOOL_WEB_TOKEN', 'matgo-web.token'),
@@ -56,7 +58,7 @@ def load_token(service, explicit_file=None, folder=None):
         if source == 'initialized_file' and not location.exists():
             raise CredentialError('No credential configured. Run matpool_auth.py init --service '
                                   + service + ', set its environment variable, or use --token-file.')
-        value = location.read_text(encoding='utf-8')
+        value = location.read_text(encoding='utf-8-sig')
     # Never fall back to a different credential after an explicit source fails.
     return normalize_token(value)
 
@@ -66,9 +68,9 @@ def save_token(service, value, folder=None, replace=False):
     directory = config_directory(folder)
     if directory.is_symlink():
         raise CredentialError('Credential directory must not be a symbolic link.')
-    directory.mkdir(mode=0o700, parents=True, exist_ok=True)
+    make_private_directory(directory)
     info = directory.stat()
-    if (not stat.S_ISDIR(info.st_mode) or info.st_mode & 0o077
+    if (not stat.S_ISDIR(info.st_mode) or (os.name != 'nt' and info.st_mode & 0o077)
             or (hasattr(os, 'getuid') and info.st_uid != os.getuid())):
         raise CredentialError('Use a credential directory owned by you with mode 0700.')
     destination = token_path(service, directory)
@@ -77,13 +79,14 @@ def save_token(service, value, folder=None, replace=False):
     if destination.exists() and not replace:
         raise CredentialError('Credential already exists. Use --replace to renew it intentionally.')
     # Create in the same private directory, then publish atomically. No token in argv/logs.
-    fd, temporary = tempfile.mkstemp(prefix='.token-', dir=directory)
+    temporary = directory / ('.token-' + uuid.uuid4().hex)
     try:
-        with os.fdopen(fd, 'w', encoding='utf-8') as stream:
-            os.fchmod(stream.fileno(), 0o600)
+        with open_private_text(temporary) as stream:
             stream.write(value + '\n')
         if replace:
             os.replace(temporary, destination)
+        elif os.name == 'nt':
+            os.rename(temporary, destination)  # Windows rename refuses an existing destination.
         else:
             os.link(temporary, destination)  # Refuse overwrite, including a concurrent init.
     finally:
@@ -157,7 +160,7 @@ def main(argv=None):
             print(json.dumps(result, ensure_ascii=False, indent=2))
             return 0 if result['verified'] else 1
         if args.token_file:
-            value = args.token_file.expanduser().read_text(encoding='utf-8')
+            value = args.token_file.expanduser().read_text(encoding='utf-8-sig')
         elif args.from_env:
             value = os.environ.get(SERVICES[args.service][0], '')
         else:

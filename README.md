@@ -101,7 +101,7 @@ python3 scripts/matpool_auth.py check --service paas
 
 ### 3. 后续命令自动使用配置
 
-默认文件是 `~/.config/matpool-gpu/matgo-web.token` 和 `~/.config/matpool-gpu/paas.token`；目录权限 `0700`、文件 `0600`。官网和 PaaS 客户端自动读取各自文件，无需每次传 Token。
+默认文件是 `~/.config/matpool-gpu/matgo-web.token` 和 `~/.config/matpool-gpu/paas.token`；POSIX 目录权限 `0700`、文件 `0600`；Windows 使用仅当前用户的受保护 DACL。官网和 PaaS 客户端自动读取各自文件，无需每次传 Token。
 
 ```bash
 python3 scripts/matpool_web.py nodes
@@ -207,7 +207,7 @@ python3 scripts/make_torch_startup.py --result-file torch-result.json > startup.
 
 - 仓库只包含通用代码、操作说明和虚构占位示例，不包含登录 Token、Cookie、SSH 私钥、真实实例编号或账户原始响应。
 - API 客户端使用 HTTPS，并拒绝自动跟随重定向。官网 stdout 为字段白名单摘要；PaaS stdout 会隐藏已知敏感字段，但不能保证识别未来所有服务端字段，分享前仍应检查。
-- `--output` 新建权限为 `0600` 的完整响应文件。它可能包含连接密码或带 Token 的 URL，请保存在仓库外，勿上传日志全文。
+- `--output` 新建私密完整响应文件（POSIX 0600；Windows 受保护 DACL）。它可能包含连接密码或带 Token 的 URL，请保存在仓库外，勿上传日志全文。
 - `.gitignore` 排除常见凭证、`.env`、本地请求、日志和缓存；它不能代替发布前审查。
 - 本项目不会配置 MT Switch 模型代理，也不附带矩池云账户、余额或可用 GPU。
 
@@ -247,3 +247,7 @@ python3 -m unittest discover -s tests -v
 ## License
 
 [MIT](LICENSE)。第三方平台名称和商标归各自所有者，本项目与平台无官方关联。
+
+## Windows
+
+支持 Windows Python 3.9+、PowerShell 和含中文/空格的路径；输入文件支持 UTF-8 BOM。凭据初始化及完整响应保存使用原生 Windows ACL，不依赖 POSIX chmod。Chrome 会话导入仍仅支持 macOS；任务允许网页操作时可复用已登录浏览器，无需导出 Token。具体命令、SSH 上传与浏览器定位排查见 [Windows 指南](references/windows.md)。离线 CI 同时覆盖 Ubuntu/Windows 和 Python 3.9/3.12；测试仅使用合成凭据，不租机。

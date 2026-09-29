@@ -13,11 +13,13 @@ description: 操作矩池云（Matpool / matgo.cn，用户有时称锯齿云）�
 公开库存无需认证；官网和 PaaS 凭证分别配置。`scripts/matpool_auth.py status` 只显示本地状态；`init --service web|paas` 保存凭证，`check --service web|paas` 做只读认证检查。不要要求用户把 Token 粘贴到聊天；终端隐藏输入由用户在自己的终端完成，Agent 可从已授权的环境变量或明确指定的私密文件导入。安装与认证不授权租机。
 客户端按 `--token-file`、对应环境变量、`~/.config/matpool-gpu/` 初始化文件的顺序读取，可用 `MATPOOL_CONFIG_DIR` 改目录。先复用已有有效配置；Chrome 导入仅在用户选择并已授权时执行。
 
+Windows 主机先读 [references/windows.md](references/windows.md)，按实际 Python、PowerShell、ACL 与浏览器能力执行。
+
 ## 选择操作方式
 
 - **查 GPU、价格、库存**：优先运行 `python3 scripts/matpool_inventory.py --gpu A2000`，它读取无需 Token 的官方市场资源池接口；具体语义见 [references/inventory.md](references/inventory.md)。
-- **直接 API 租机、镜像、实例及释放**：优先使用 `scripts/matpool_web.py`，见 [references/web-api.md](references/web-api.md)。官网接口需要网页登录 Token；PaaS Token 不能替代。用户授权复用 Chrome 登录态时可用限定站点的导入脚本，之后全部通过 HTTPS 脚本调用。
-- **交互式租机**：仅在用户要求操作网页时使用浏览器，见 [references/console.md](references/console.md)。用户要求 skill/API 调用时，不自动切换网页下单。
+- **直接 API 租机、镜像、实例及释放**：优先使用 `scripts/matpool_web.py`，见 [references/web-api.md](references/web-api.md)。官网接口需要网页登录 Token；PaaS Token 不能替代。在支持的 macOS 环境且用户授权复用 Chrome 登录态时可用限定站点导入脚本。Windows 使用已配置凭据或授权浏览器。
+- **交互式租机**：用户已要求或允许网页操作时使用浏览器，见 [references/console.md](references/console.md)。用户明确限定 API 时，不自动切换网页下单；仅要求用技能辅助而没有限定方式时，已有网页授权可继续沿用，不强制用户先导出 Token。
 - **已有实例跑代码**：从用户提供的信息或租用列表取得 SSH 连接信息，采用 SSH/SCP/rsync；保存路径和退出检查见 console.md。
 - **PyTorch / CUDA 任务**：先核对 Python 解释器，见 [references/pytorch.md](references/pytorch.md)。镜像 633955 的 PyTorch 位于 `myconda` 环境；系统 `python3` 导入失败不代表镜像未安装。官网启动字段限制 1024 字节，短测试用 `scripts/make_torch_startup.py`。
 - **自动提交、查询、取消批任务**：已有 PaaS Token 时使用 `scripts/matpool_api.py`；接口、认证及示例见 [references/paas-api.md](references/paas-api.md)。没有 Token 可以完成请求准备，需要真实 API 操作时再请用户配置。不要把网页登录凭证或模型 API Token 当成 PaaS Token。

@@ -8,11 +8,15 @@ import os
 from pathlib import Path
 import sqlite3
 import subprocess
+import sys
 from urllib.parse import unquote
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--output-dir', required=True, type=Path)
 args = parser.parse_args()
+if sys.platform != 'darwin':
+    raise SystemExit('Chrome session import supports macOS only. On Windows/Linux use the authorized browser UI, '
+                     'or run matpool_auth.py init in your own terminal; never paste tokens into chat.')
 folder = args.output_dir
 folder.mkdir(mode=0o700, parents=True, exist_ok=True)
 if folder.stat().st_mode & 0o077:

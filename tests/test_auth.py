@@ -23,7 +23,10 @@ class AuthTest(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.folder = Path(self.temp.name) / 'config'
-        self.environment = patch.dict(os.environ, {'MATPOOL_CONFIG_DIR': str(self.folder)}, clear=True)
+        # Keep OS/runtime variables (notably SystemRoot on Windows Python 3.9).
+        environment = {k: v for k, v in os.environ.items() if not k.startswith('MATPOOL_')}
+        environment['MATPOOL_CONFIG_DIR'] = str(self.folder)
+        self.environment = patch.dict(os.environ, environment, clear=True)
         self.environment.start()
         self.addCleanup(self.environment.stop)
 
@@ -39,8 +42,9 @@ class AuthTest(unittest.TestCase):
         saved = auth.token_path('web')
         self.assertEqual(code, 0)
         self.assertEqual(saved.read_text(), 'FAKE_WEB_SECRET\n')
-        self.assertEqual(stat.S_IMODE(saved.stat().st_mode), 0o600)
-        self.assertEqual(stat.S_IMODE(self.folder.stat().st_mode), 0o700)
+        if os.name != 'nt':
+            self.assertEqual(stat.S_IMODE(saved.stat().st_mode), 0o600)
+            self.assertEqual(stat.S_IMODE(self.folder.stat().st_mode), 0o700)
         self.assertFalse(json.loads(out)['verified'])
         self.assertNotIn('FAKE_WEB_SECRET', out + err)
         self.assertIn('takes precedence', err)
@@ -60,7 +64,8 @@ class AuthTest(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertEqual(auth.load_token('web'), 'FAKE_RENEWED_SECRET')
         self.assertEqual(auth.load_token('paas'), 'FAKE_PAAS_SECRET')
-        self.assertEqual(stat.S_IMODE(auth.token_path('web').stat().st_mode), 0o600)
+        if os.name != 'nt':
+            self.assertEqual(stat.S_IMODE(auth.token_path('web').stat().st_mode), 0o600)
 
     def test_client_precedence_and_no_fallback_after_invalid_explicit_source(self):
         auth.save_token('web', 'FAKE_SAVED_SECRET')
@@ -128,6 +133,7 @@ class AuthTest(unittest.TestCase):
                 auth.save_token('web', value)
         self.assertFalse(self.folder.exists())
 
+    @unittest.skipIf(os.name == 'nt', 'POSIX mode and unprivileged symlink checks')
     def test_unsafe_directory_and_symlinks_refused(self):
         self.folder.mkdir(mode=0o755)
         with self.assertRaises(auth.CredentialError):
@@ -213,7 +219,7 @@ class AuthTest(unittest.TestCase):
         result = subprocess.run([sys.executable, str(ROOT / 'scripts/matpool_auth.py'),
                                  '--config-dir', str(custom), 'init', '--service', 'paas', '--from-env'],
                                 env=env, text=True, capture_output=True, check=False)
-        self.assertEqual(result.returncode, 0)
+        self.assertEqual(result.returncode, 0, result.stderr)
         self.assertFalse(self.folder.exists())
         self.assertEqual((custom / 'paas.token').read_text(), 'FAKE_SUBPROCESS_SECRET\n')
         self.assertNotIn('FAKE_SUBPROCESS_SECRET', result.stdout + result.stderr)
