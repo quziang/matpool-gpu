@@ -23,7 +23,10 @@ class AuthTest(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.folder = Path(self.temp.name) / 'config'
-        self.environment = patch.dict(os.environ, {'MATPOOL_CONFIG_DIR': str(self.folder)}, clear=True)
+        # Keep OS/runtime variables (notably SystemRoot on Windows Python 3.9).
+        environment = {k: v for k, v in os.environ.items() if not k.startswith('MATPOOL_')}
+        environment['MATPOOL_CONFIG_DIR'] = str(self.folder)
+        self.environment = patch.dict(os.environ, environment, clear=True)
         self.environment.start()
         self.addCleanup(self.environment.stop)
 
@@ -216,7 +219,7 @@ class AuthTest(unittest.TestCase):
         result = subprocess.run([sys.executable, str(ROOT / 'scripts/matpool_auth.py'),
                                  '--config-dir', str(custom), 'init', '--service', 'paas', '--from-env'],
                                 env=env, text=True, capture_output=True, check=False)
-        self.assertEqual(result.returncode, 0)
+        self.assertEqual(result.returncode, 0, result.stderr)
         self.assertFalse(self.folder.exists())
         self.assertEqual((custom / 'paas.token').read_text(), 'FAKE_SUBPROCESS_SECRET\n')
         self.assertNotIn('FAKE_SUBPROCESS_SECRET', result.stdout + result.stderr)
