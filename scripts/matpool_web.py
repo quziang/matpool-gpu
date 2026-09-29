@@ -11,6 +11,7 @@ import urllib.request
 
 from matpool_api import InputError, NoRedirect, positive
 from matpool_auth import CredentialError, load_token
+from private_files import open_private_text
 
 BASE = 'https://matgo.cn/api'
 RENT_FIELDS = {'resource_pool_id', 'image_id', 'hardware_qty', 'machine_category',
@@ -133,7 +134,7 @@ def main(argv=None):
         elif args.command == 'release':
             method, body = 'DELETE', {'id': args.id}
         else:
-            method, body = 'POST', prepare_rent(json.loads(args.file.read_text()))
+            method, body = 'POST', prepare_rent(json.loads(args.file.read_text(encoding='utf-8-sig')))
         if args.command in ('rent', 'release') and not args.execute:
             visible = {k: ('[REDACTED]' if k in ('cmd', 'public_key') else v)
                        for k, v in body.items()}
@@ -141,7 +142,7 @@ def main(argv=None):
             return 0
         token = load_token('web', args.token_file)
         if args.output:
-            sink = os.fdopen(os.open(args.output, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600), 'w')
+            sink = open_private_text(args.output)
         status, result = request(method, path, token, query, body)
         if sink:
             json.dump(dict(http_status=status, response=result), sink, ensure_ascii=False, indent=2)

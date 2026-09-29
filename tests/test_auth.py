@@ -39,8 +39,9 @@ class AuthTest(unittest.TestCase):
         saved = auth.token_path('web')
         self.assertEqual(code, 0)
         self.assertEqual(saved.read_text(), 'FAKE_WEB_SECRET\n')
-        self.assertEqual(stat.S_IMODE(saved.stat().st_mode), 0o600)
-        self.assertEqual(stat.S_IMODE(self.folder.stat().st_mode), 0o700)
+        if os.name != 'nt':
+            self.assertEqual(stat.S_IMODE(saved.stat().st_mode), 0o600)
+            self.assertEqual(stat.S_IMODE(self.folder.stat().st_mode), 0o700)
         self.assertFalse(json.loads(out)['verified'])
         self.assertNotIn('FAKE_WEB_SECRET', out + err)
         self.assertIn('takes precedence', err)
@@ -60,7 +61,8 @@ class AuthTest(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertEqual(auth.load_token('web'), 'FAKE_RENEWED_SECRET')
         self.assertEqual(auth.load_token('paas'), 'FAKE_PAAS_SECRET')
-        self.assertEqual(stat.S_IMODE(auth.token_path('web').stat().st_mode), 0o600)
+        if os.name != 'nt':
+            self.assertEqual(stat.S_IMODE(auth.token_path('web').stat().st_mode), 0o600)
 
     def test_client_precedence_and_no_fallback_after_invalid_explicit_source(self):
         auth.save_token('web', 'FAKE_SAVED_SECRET')
@@ -128,6 +130,7 @@ class AuthTest(unittest.TestCase):
                 auth.save_token('web', value)
         self.assertFalse(self.folder.exists())
 
+    @unittest.skipIf(os.name == 'nt', 'POSIX mode and unprivileged symlink checks')
     def test_unsafe_directory_and_symlinks_refused(self):
         self.folder.mkdir(mode=0o755)
         with self.assertRaises(auth.CredentialError):

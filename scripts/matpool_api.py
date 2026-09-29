@@ -12,6 +12,7 @@ import urllib.request
 import uuid
 
 from matpool_auth import CredentialError, load_token
+from private_files import open_private_text
 
 BASE_URL = 'https://paas.matpool.com'
 PRIVATE_KEYS = {'creds', 'password', 'token', 'authorization', 'sshauths',
@@ -133,7 +134,7 @@ def request(method, path, query, fields, token, timeout):
 def parser():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--token-file', type=Path, help='Override environment or initialized PaaS credential')
-    p.add_argument('--output', type=Path, help='Create a 0600 file with full response; never overwrite')
+    p.add_argument('--output', type=Path, help='Create a private UTF-8 file with full response; never overwrite')
     p.add_argument('--timeout', type=float, default=30)
     subs = p.add_subparsers(dest='command', required=True)
     subs.add_parser('probe', help='Unauthenticated read-only HTTPS probe')
@@ -172,7 +173,7 @@ def main(argv=None):
                 method = 'DELETE'
         elif args.command == 'create':
             method = 'POST'
-            fields = prepare_fields(json.loads(args.file.read_text(encoding='utf-8')))
+            fields = prepare_fields(json.loads(args.file.read_text(encoding='utf-8-sig')))
         if args.command in {'create', 'cancel'} and not args.execute:
             print(json.dumps({'preview': True, 'method': method, 'url': BASE_URL + path,
                               'query': query, 'fields': redact(fields)}, ensure_ascii=False, indent=2))
@@ -181,8 +182,7 @@ def main(argv=None):
             token = load_token('paas', args.token_file)
         # Reserve output before a mutation so an invalid path cannot cause lost results.
         if args.output:
-            fd = os.open(args.output, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
-            sink = os.fdopen(fd, 'w', encoding='utf-8')
+            sink = open_private_text(args.output)
         status, result = request(method, path, query, fields, token, args.timeout)
         if sink:
             json.dump({'http_status': status, 'response': result}, sink, ensure_ascii=False, indent=2)
